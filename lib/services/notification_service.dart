@@ -8,12 +8,14 @@ class NotificationService {
   static Future<void> init() async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    // Note: defaultToSpeaking: true is deprecated or not available in all versions,
+    // but requestXPermission: false lets us request them explicitly later.
     const DarwinInitializationSettings macOSSettings =
         DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
-          requestCriticalPermission: true,
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
         );
 
     const InitializationSettings initSettings = InitializationSettings(
@@ -86,8 +88,10 @@ class NotificationService {
     }
   }
 
-  static Future<void> requestPermissions() async {
+  static Future<bool> requestPermissions() async {
     debugPrint('Requesting notification permissions...');
+
+    bool granted = false;
 
     // Request Android 13+ permissions
     final androidImplementation = _notificationsPlugin
@@ -95,8 +99,9 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >();
     if (androidImplementation != null) {
-      final granted = await androidImplementation
+      final bool? result = await androidImplementation
           .requestNotificationsPermission();
+      granted = result ?? false;
       debugPrint('Android notification permission granted: $granted');
     }
 
@@ -105,14 +110,18 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
           MacOSFlutterLocalNotificationsPlugin
         >();
+
     if (macOSImplementation != null) {
-      final granted = await macOSImplementation.requestPermissions(
+      final bool? result = await macOSImplementation.requestPermissions(
         alert: true,
         badge: true,
         sound: true,
         critical: true,
       );
+      granted = result ?? false;
       debugPrint('macOS notification permission granted: $granted');
     }
+
+    return granted;
   }
 }

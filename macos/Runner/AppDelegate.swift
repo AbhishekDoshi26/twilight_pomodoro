@@ -50,6 +50,23 @@ class AppDelegate: FlutterAppDelegate {
                                       message: "Invalid arguments for updateWidget",
                                       details: nil))
                 }
+            } else if call.method == "getWidgetState" {
+                if let defaults = UserDefaults(suiteName: "group.com.abhishek.pomodoro") {
+                    let seconds = defaults.integer(forKey: "secondsRemaining")
+                    let total = defaults.integer(forKey: "totalSeconds")
+                    let mode = defaults.string(forKey: "mode") ?? "Work"
+                    let isRunning = defaults.bool(forKey: "isRunning")
+                    
+                    let data: [String: Any] = [
+                        "secondsRemaining": seconds,
+                        "totalSeconds": total,
+                        "mode": mode,
+                        "isRunning": isRunning
+                    ]
+                    result(data)
+                } else {
+                    result(nil)
+                }
             } else {
                 result(FlutterMethodNotImplemented)
             }

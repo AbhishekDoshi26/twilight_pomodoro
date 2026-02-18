@@ -30,4 +30,18 @@ class WidgetService {
       debugPrint('Error updating native widget: $e');
     }
   }
+
+  static Future<Map<String, dynamic>?> getWidgetState() async {
+    if (!Platform.isMacOS) return null;
+
+    try {
+      final result = await _channel.invokeMethod('getWidgetState');
+      if (result != null) {
+        return Map<String, dynamic>.from(result);
+      }
+    } catch (e) {
+      debugPrint('Error getting native widget state: $e');
+    }
+    return null;
+  }
 }

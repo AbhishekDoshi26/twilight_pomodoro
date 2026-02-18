@@ -25,6 +25,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
   late int _secondsRemaining;
   Timer? _timer;
   bool _isRunning = false;
+  bool _notificationsEnabled = true;
   String _mode = 'Work';
   late AnimationController _progressController;
 
@@ -37,6 +38,28 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       duration: const Duration(seconds: 1),
     );
     NotificationService.requestPermissions();
+    _loadWidgetState();
+    debugPrint('PomodoroScreen initialized');
+  }
+
+  Future<void> _loadWidgetState() async {
+    final state = await WidgetService.getWidgetState();
+    if (state != null && mounted) {
+      if (state['secondsRemaining'] != null) {
+        setState(() {
+          _secondsRemaining = state['secondsRemaining'] as int;
+          if (state['mode'] != null) {
+            _mode = state['mode'] as String;
+          }
+        });
+      }
+
+      if (state['isRunning'] == true) {
+        _startTimer();
+      } else if (_secondsRemaining < _getDurationForMode(_mode)) {
+        TrayService.updateTrayText('PAUSED');
+      }
+    }
   }
 
   @override
@@ -97,15 +120,22 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     } else if (_mode == 'Eye Care') {
       title = 'Eye Care Break Needed';
       body = 'Look 20 feet away for 20 seconds now.';
-      NotificationService.showNotification(title, body);
+      if (_notificationsEnabled) {
+        NotificationService.showNotification(title, body);
+      }
       return _showEyeBreakPrompt();
     } else if (_mode == 'Eye Break') {
       title = 'Eye Break Over';
       body = 'Success! You can resume your work now.';
-      NotificationService.showNotification(title, body);
+      if (_notificationsEnabled) {
+        NotificationService.showNotification(title, body);
+      }
       return _showResumeWorkPrompt();
     }
-    NotificationService.showNotification(title, body);
+
+    if (_notificationsEnabled) {
+      NotificationService.showNotification(title, body);
+    }
   }
 
   void _showResumeWorkPrompt() {
@@ -285,6 +315,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
             shortBreakTime: _shortBreakTime,
             longBreakTime: _longBreakTime,
             mode: _mode,
+            notificationsEnabled: _notificationsEnabled, // Pass current state
             onWorkTimeChanged: (v) => setState(() {
               _workTime = v;
               if (_mode == 'Work') {
@@ -305,6 +336,9 @@ class _PomodoroScreenState extends State<PomodoroScreen>
                 _secondsRemaining = v;
                 _syncWidget();
               }
+            }),
+            onNotificationsChanged: (v) => setState(() {
+              _notificationsEnabled = v;
             }),
           ),
         ),

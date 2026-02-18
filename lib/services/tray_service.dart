@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -32,12 +33,11 @@ class TrayService extends TrayListener {
 
   @override
   void onTrayIconMouseDown() {
-    _toggleWindow();
+    // Avoid double-firing; use MouseUp for click behavior
   }
 
   @override
   void onTrayIconMouseUp() {
-    // Some macOS versions respond better to MouseUp
     _toggleWindow();
   }
 
@@ -62,19 +62,30 @@ class TrayService extends TrayListener {
     await windowManager.focus();
   }
 
-  Future<void> _toggleWindow() async {
-    bool isMinimized = await windowManager.isMinimized();
-    bool isVisible = await windowManager.isVisible();
+  bool _isToggling = false;
 
-    if (isMinimized || !isVisible) {
-      await _showWindow();
-    } else {
-      bool isFocused = await windowManager.isFocused();
-      if (isFocused) {
-        await windowManager.hide();
+  Future<void> _toggleWindow() async {
+    if (_isToggling) return;
+    _isToggling = true;
+
+    try {
+      bool isMinimized = await windowManager.isMinimized();
+      bool isVisible = await windowManager.isVisible();
+
+      if (isMinimized || !isVisible) {
+        await _showWindow();
       } else {
-        await windowManager.focus();
+        bool isFocused = await windowManager.isFocused();
+        if (isFocused) {
+          await windowManager.hide();
+        } else {
+          await windowManager.focus();
+        }
       }
+    } catch (e) {
+      debugPrint('Error toggling window: $e');
+    } finally {
+      _isToggling = false;
     }
   }
 }

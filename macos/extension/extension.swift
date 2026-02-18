@@ -53,8 +53,58 @@ struct PomodoroWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        ZStack {
-            // Background Twilight Aurora Gradient
+        VStack(spacing: 6) {
+            // Header
+            HStack(spacing: 4) {
+                Image(systemName: entry.isRunning ? "timer" : "timer.circle")
+                    .font(.system(size: 10, weight: .bold))
+                Text(entry.mode.uppercased())
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .kerning(1)
+            }
+            .foregroundColor(accentColor.opacity(0.9))
+            
+            // Main Timer Ring with Centered Text
+            ZStack {
+                // Start from 0 (top) and go clockwise
+                Circle()
+                    .stroke(lineWidth: 6)
+                    .opacity(0.15)
+                    .foregroundColor(.white)
+                
+                Circle()
+                    .trim(from: 0.0, to: CGFloat(calculateProgress()))
+                    .stroke(style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+                    .foregroundColor(accentColor)
+                    // -90 degrees usually starts at top (12 o'clock)
+                    .rotationEffect(Angle(degrees: -90))
+                    .animation(.linear(duration: entry.isRunning ? 1.0 : 0.3), value: calculateProgress())
+                    
+                // Time Center
+                VStack(spacing: 2) {
+                    if entry.isRunning {
+                        Text(entry.targetDate, style: .timer)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.5)
+                    } else {
+                        Text(formatTime(entry.secondsRemaining))
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .minimumScaleFactor(0.5)
+                    }
+                    
+                    if !entry.isRunning {
+                        Text(entry.secondsRemaining > 0 ? "PAUSED" : "DONE")
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundColor(entry.secondsRemaining > 0 ? .orange : .green)
+                    }
+                }
+                .foregroundColor(.white)
+            }
+            .padding(4)
+        }
+        .padding(12)
+        .containerBackground(for: .widget) {
             LinearGradient(
                 colors: [
                     Color(red: 0.1, green: 0.05, blue: 0.2), // Deep Twilight
@@ -63,60 +113,6 @@ struct PomodoroWidgetEntryView : View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            
-            VStack(spacing: 6) {
-                // Header
-                HStack(spacing: 4) {
-                    Image(systemName: entry.isRunning ? "timer" : "timer.circle")
-                        .font(.system(size: 10, weight: .bold))
-                    Text(entry.mode.uppercased())
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .kerning(1)
-                }
-                .foregroundColor(accentColor.opacity(0.9))
-                
-                // Main Timer Ring with Centered Text
-                ZStack {
-                    // Start from 0 (top) and go clockwise
-                    Circle()
-                        .stroke(lineWidth: 6)
-                        .opacity(0.15)
-                        .foregroundColor(.white)
-                    
-                    Circle()
-                        .trim(from: 0.0, to: CGFloat(calculateProgress()))
-                        .stroke(style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
-                        .foregroundColor(accentColor)
-                        .rotationEffect(Angle(degrees: -90))
-                        .animation(.linear(duration: entry.isRunning ? 1.0 : 0.3), value: calculateProgress())
-                        
-                    // Time Center
-                    VStack(spacing: 2) {
-                        if entry.isRunning {
-                            Text(entry.targetDate, style: .timer)
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
-                                .multilineTextAlignment(.center)
-                                .minimumScaleFactor(0.5)
-                        } else {
-                            Text(formatTime(entry.secondsRemaining))
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
-                                .minimumScaleFactor(0.5)
-                        }
-                        
-                        if !entry.isRunning {
-                            Text(entry.secondsRemaining > 0 ? "PAUSED" : "DONE")
-                                .font(.system(size: 8, weight: .black))
-                                .foregroundColor(entry.secondsRemaining > 0 ? .orange : .green)
-                        }
-                    }
-                    .foregroundColor(.white)
-                }
-                .padding(4)
-            }
-            .padding(12)
-        }
-        .containerBackground(for: .widget) {
-            Color.clear // We use our custom ZStack background
         }
     }
     
@@ -160,5 +156,6 @@ struct PomodoroWidget: Widget {
         .configurationDisplayName("Twilight Pomodoro")
         .description("Track your session with the Twilight Pomodoro.")
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
     }
 }

@@ -6,7 +6,7 @@ A premium, high-fidelity Pomodoro timer built with **Flutter**, designed specifi
 
 ## 📥 Download
 
-[**Download for macOS (.zip)**](Twilight_Pomodoro_macOS_v0.0.1_b2.zip)
+[**Download for macOS (.zip)**](Twilight_Pomodoro_macOS_v0.0.1_b4.zip)
 
 ### 🚀 First Time Setup
 If macOS says the app "cannot be verified":
