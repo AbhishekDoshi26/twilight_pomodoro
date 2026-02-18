@@ -37,7 +37,9 @@ class AppDelegate: FlutterAppDelegate {
                         defaults.synchronize()
                         
                         // Trigger widget refresh
-                        WidgetCenter.shared.reloadAllTimelines()
+                        if #available(macOS 11.0, *) {
+                            WidgetCenter.shared.reloadAllTimelines()
+                        }
                         result(true)
                     } else {
                         result(FlutterError(code: "UNAVAILABLE",
