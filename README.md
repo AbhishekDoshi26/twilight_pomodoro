@@ -4,6 +4,11 @@ A premium, high-fidelity Pomodoro timer built with **Flutter**, designed specifi
 
 ![Twilight Pomodoro Logo](assets/app_icon.png)
 
+## 🎥 Demo
+
+![Twilight Pomodoro Demo](assets/demo.mov)
+
+
 ## 📥 Download
 
 [**Download for macOS (.zip)**](Twilight_Pomodoro_macOS_v0.0.3_b7.zip)
