@@ -72,12 +72,20 @@ class _PomodoroScreenState extends State<PomodoroScreen>
         // Update macOS Desktop Widget
         WidgetService.updateWidget(
           secondsRemaining: _secondsRemaining,
+          totalSeconds: _getDurationForMode(_mode),
           mode: _mode,
           isRunning: _isRunning,
         );
       } else {
         _timer?.cancel();
         setState(() => _isRunning = false);
+        // Explicitly update widget when timer reaches zero
+        WidgetService.updateWidget(
+          secondsRemaining: 0,
+          totalSeconds: _getDurationForMode(_mode),
+          mode: _mode,
+          isRunning: false,
+        );
         _handleTimerCompletion();
       }
     });
@@ -228,6 +236,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     TrayService.updateTrayText('');
     WidgetService.updateWidget(
       secondsRemaining: _secondsRemaining,
+      totalSeconds: _getDurationForMode(_mode),
       mode: _mode,
       isRunning: false,
     );
@@ -242,6 +251,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     TrayService.updateTrayText('');
     WidgetService.updateWidget(
       secondsRemaining: _secondsRemaining,
+      totalSeconds: _getDurationForMode(_mode),
       mode: _mode,
       isRunning: false,
     );

@@ -4,6 +4,10 @@ A premium, high-fidelity Pomodoro timer built with **Flutter**, designed specifi
 
 ![Twilight Pomodoro Logo](assets/app_icon.png)
 
+## 📥 Download
+
+[**Download for macOS (.zip)**](Twilight_Pomodoro_macOS_v0.0.1_b3.zip)
+
 ---
 
 ## ✨ Features
@@ -50,12 +54,13 @@ A premium, high-fidelity Pomodoro timer built with **Flutter**, designed specifi
    cd twilight_pomodoro
    ```
 
-2. **Install dependencies**
+2. **Automated Build & Deploy (macOS)**
+   Run our deployment script to clean, install pods, build the release, and create a distributable ZIP in one command:
    ```bash
-   flutter pub get
+   ./scripts/deploy_macos.sh
    ```
 
-3. **macOS Native Setup**
+3. **Manual macOS Native Setup**
    ```bash
    cd macos
    pod install

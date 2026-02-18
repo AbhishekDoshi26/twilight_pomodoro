@@ -3,7 +3,7 @@ import SwiftUI
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), secondsRemaining: 1500, mode: "Work", isRunning: false, targetDate: Date().addingTimeInterval(1500))
+        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), secondsRemaining: 1500, totalSeconds: 1500, mode: "Work", isRunning: false, targetDate: Date().addingTimeInterval(1500))
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
@@ -13,25 +13,32 @@ struct Provider: AppIntentTimelineProvider {
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
         let entry = fetchLatestEntry(date: Date(), configuration: configuration)
-        // Since we use the native SwiftUI timer style, we don't need frequent reloads.
-        // We only reload when the state changes (Start/Pause/Mode Switch).
         return Timeline(entries: [entry], policy: .atEnd)
     }
 
     private func fetchLatestEntry(date: Date, configuration: ConfigurationAppIntent) -> SimpleEntry {
         let defaults = UserDefaults(suiteName: "group.com.abhishek.pomodoro")
         let seconds = defaults?.integer(forKey: "secondsRemaining") ?? 1500
+        let total = defaults?.integer(forKey: "totalSeconds") ?? 1500
         let mode = defaults?.string(forKey: "mode") ?? "Work"
         let isRunning = defaults?.bool(forKey: "isRunning") ?? false
-        let targetTimestamp = defaults?.double(forKey: "targetTimestamp") ?? Date().addingTimeInterval(1500).timeIntervalSince1970
+        let targetTimestamp = defaults?.double(forKey: "targetTimestamp") ?? Date().addingTimeInterval(Double(seconds)).timeIntervalSince1970
+        
+        let targetDate = Date(timeIntervalSince1970: targetTimestamp)
+        
+        // If the target date is in the past but the app thinks it's still running, 
+        // it means the app hasn't updated its state to 'finished' yet.
+        // We should show 00:00 instead of counting into negative time.
+        let finalRunning = isRunning && targetDate > Date()
         
         return SimpleEntry(
             date: date,
             configuration: configuration,
             secondsRemaining: seconds,
+            totalSeconds: total,
             mode: mode,
-            isRunning: isRunning,
-            targetDate: Date(timeIntervalSince1970: targetTimestamp)
+            isRunning: finalRunning,
+            targetDate: targetDate
         )
     }
 }
@@ -40,6 +47,7 @@ struct SimpleEntry: TimelineEntry {
     let date: Date
     let configuration: ConfigurationAppIntent
     let secondsRemaining: Int
+    let totalSeconds: Int
     let mode: String
     let isRunning: Bool
     let targetDate: Date
@@ -52,13 +60,12 @@ struct PomodoroWidgetEntryView : View {
         VStack(spacing: 8) {
             HStack {
                 Image(systemName: entry.isRunning ? "timer" : "timer.circle")
-                    .foregroundColor(entry.mode == "Work" ? .orange : .green)
+                    .foregroundColor(colorForMode(entry.mode))
                 Text(entry.mode.uppercased())
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
             }
             
-            // Native SwiftUI Timer style (stays smooth even if reloads are throttled)
             if entry.isRunning {
                 Text(entry.targetDate, style: .timer)
                     .font(.system(size: 36, weight: .thin, design: .rounded))
@@ -71,14 +78,18 @@ struct PomodoroWidgetEntryView : View {
                     .foregroundColor(.primary)
             }
             
-            if !entry.isRunning {
+            if !entry.isRunning && entry.secondsRemaining > 0 {
                 Text("PAUSED")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.red.opacity(0.8))
+                    .foregroundColor(.orange.opacity(0.8))
+            } else if !entry.isRunning && entry.secondsRemaining <= 0 {
+                Text("FINISHED")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.green.opacity(0.8))
             } else {
-                ProgressView(value: Double(entry.secondsRemaining), total: Double(getMaxSeconds(entry.mode)))
-                    .progressViewStyle(LinearProgressViewStyle(tint: entry.mode == "Work" ? .orange : .green))
-                    .frame(width: 60)
+                ProgressView(value: calculateProgress(), total: 1.0)
+                    .progressViewStyle(LinearProgressViewStyle(tint: colorForMode(entry.mode)))
+                    .frame(width: 80)
             }
         }
         .containerBackground(
@@ -91,16 +102,27 @@ struct PomodoroWidgetEntryView : View {
         )
     }
     
-    private func formatTime(_ seconds: Int) -> String {
-        let m = seconds / 60
-        let s = seconds % 60
-        return String(format: "%02d:%02d", m, s)
+    private func colorForMode(_ mode: String) -> Color {
+        if mode == "Work" || mode == "Eye Care" { return .orange }
+        return .green
     }
     
-    private func getMaxSeconds(_ mode: String) -> Int {
-        if mode == "Work" { return 25 * 60 }
-        if mode == "Short" { return 5 * 60 }
-        return 15 * 60
+    private func calculateProgress() -> Double {
+        let total = Double(entry.totalSeconds > 0 ? entry.totalSeconds : 1)
+        if entry.isRunning {
+            let remaining = entry.targetDate.timeIntervalSinceNow
+            return max(0, min(1.0, 1.0 - (remaining / total)))
+        } else {
+            let remaining = Double(entry.secondsRemaining)
+            return max(0, min(1.0, 1.0 - (remaining / total)))
+        }
+    }
+    
+    private func formatTime(_ seconds: Int) -> String {
+        let s = max(0, seconds)
+        let m = s / 60
+        let sec = s % 60
+        return String(format: "%02d:%02d", m, sec)
     }
 }
 

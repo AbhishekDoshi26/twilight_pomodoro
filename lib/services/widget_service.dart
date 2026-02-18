@@ -13,6 +13,7 @@ class WidgetService {
 
   static Future<void> updateWidget({
     required int secondsRemaining,
+    required int totalSeconds,
     required String mode,
     required bool isRunning,
   }) async {
@@ -21,10 +22,10 @@ class WidgetService {
     try {
       await _channel.invokeMethod('updateWidget', {
         'secondsRemaining': secondsRemaining,
+        'totalSeconds': totalSeconds,
         'mode': mode,
         'isRunning': isRunning,
       });
-      // debugPrint('Native Widget updated: $secondsRemaining');
     } catch (e) {
       debugPrint('Error updating native widget: $e');
     }

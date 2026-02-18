@@ -21,29 +21,28 @@ class AppDelegate: FlutterAppDelegate {
             if call.method == "updateWidget" {
                 if let args = call.arguments as? [String: Any],
                    let secondsRemaining = args["secondsRemaining"] as? Int,
+                   let totalSeconds = args["totalSeconds"] as? Int,
                    let mode = args["mode"] as? String,
                    let isRunning = args["isRunning"] as? Bool {
                     
-                    // Save to shared UserDefaults for the Widget
-                    // IMPORTANT: Ensure this matches the App Group in Xcode
                     if let defaults = UserDefaults(suiteName: "group.com.abhishek.pomodoro") {
                         // Calculate target end time for native SwiftUI timer smoothness
                         let targetDate = Date().addingTimeInterval(TimeInterval(secondsRemaining))
                         
                         defaults.set(secondsRemaining, forKey: "secondsRemaining")
+                        defaults.set(totalSeconds, forKey: "totalSeconds")
                         defaults.set(mode, forKey: "mode")
                         defaults.set(isRunning, forKey: "isRunning")
                         defaults.set(targetDate.timeIntervalSince1970, forKey: "targetTimestamp")
                         defaults.synchronize()
                         
-                        // Trigger widget refresh
                         if #available(macOS 11.0, *) {
                             WidgetCenter.shared.reloadAllTimelines()
                         }
                         result(true)
                     } else {
                         result(FlutterError(code: "UNAVAILABLE",
-                                          message: "App Group 'group.com.abhishek.pomodoro' not found. Please enable it in Xcode Capabilities.",
+                                          message: "App Group not found",
                                           details: nil))
                     }
                 } else {
