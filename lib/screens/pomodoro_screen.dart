@@ -1,0 +1,268 @@
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import '../services/notification_service.dart';
+import '../widgets/pomodoro_background.dart';
+import '../widgets/timer_controls.dart';
+import '../widgets/mode_selector.dart';
+import '../widgets/timer_display.dart';
+import '../widgets/settings_dialog.dart';
+import '../widgets/eye_break_dialog.dart';
+
+class PomodoroScreen extends StatefulWidget {
+  const PomodoroScreen({super.key});
+
+  @override
+  State<PomodoroScreen> createState() => _PomodoroScreenState();
+}
+
+class _PomodoroScreenState extends State<PomodoroScreen>
+    with SingleTickerProviderStateMixin {
+  int _workTime = 25 * 60, _shortBreakTime = 5 * 60, _longBreakTime = 15 * 60;
+  final int _eyeCareWorkTime = 20 * 60, _eyeCareBreakTime = 20;
+  late int _secondsRemaining;
+  Timer? _timer;
+  bool _isRunning = false;
+  String _mode = 'Work';
+  late AnimationController _progressController;
+
+  @override
+  void initState() {
+    super.initState();
+    _secondsRemaining = _workTime;
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    NotificationService.requestPermissions();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _progressController.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    if (_isRunning) {
+      return;
+    }
+    if (_secondsRemaining == 0) {
+      setState(() => _secondsRemaining = _getDurationForMode(_mode));
+    }
+    setState(() => _isRunning = true);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() => _secondsRemaining--);
+        _progressController.value = 0.0;
+        _progressController.animateTo(
+          1.0,
+          duration: const Duration(seconds: 1),
+          curve: Curves.linear,
+        );
+      } else {
+        _timer?.cancel();
+        setState(() => _isRunning = false);
+        _handleTimerCompletion();
+      }
+    });
+    _progressController.value = 0.0;
+    _progressController.animateTo(
+      1.0,
+      duration: const Duration(seconds: 1),
+      curve: Curves.linear,
+    );
+  }
+
+  void _handleTimerCompletion() {
+    debugPrint('Timer completed in mode: $_mode');
+    String title = 'Time is up!', body = 'Great job staying focused.';
+    if (_mode == 'Work') {
+      body = 'Work session complete. Time to take a break!';
+    } else if (_mode == 'Short' || _mode == 'Long') {
+      body = 'Break over. Ready to work?';
+    } else if (_mode == 'Eye Care') {
+      title = 'Eye Care Break Needed';
+      body = 'Look 20 feet away for 20 seconds now.';
+      NotificationService.showNotification(title, body);
+      return _showEyeBreakPrompt();
+    } else if (_mode == 'Eye Break') {
+      title = 'Eye Break Over';
+      body = 'Success! You can resume your work now.';
+      NotificationService.showNotification(title, body);
+      return _switchMode('Eye Care');
+    }
+    NotificationService.showNotification(title, body);
+  }
+
+  void _showEyeBreakPrompt() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Eye Break',
+      pageBuilder: (_, _, _) => Container(),
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionBuilder: (context, anim1, _, _) => Transform.scale(
+        scale: anim1.value,
+        child: Opacity(
+          opacity: anim1.value,
+          child: EyeBreakDialog(
+            onStartBreak: () {
+              _switchMode('Eye Break');
+              _startTimer();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _pauseTimer() {
+    _timer?.cancel();
+    _progressController.stop();
+    setState(() => _isRunning = false);
+  }
+
+  void _resetTimer() {
+    _pauseTimer();
+    setState(() {
+      _secondsRemaining = _getDurationForMode(_mode);
+      _progressController.value = 0.0;
+    });
+  }
+
+  int _getDurationForMode(String mode) {
+    if (mode == 'Work') {
+      return _workTime;
+    }
+    if (mode == 'Short') {
+      return _shortBreakTime;
+    }
+    if (mode == 'Long') {
+      return _longBreakTime;
+    }
+    return mode == 'Eye Care' ? _eyeCareWorkTime : _eyeCareBreakTime;
+  }
+
+  void _switchMode(String mode) {
+    _pauseTimer();
+    setState(() {
+      _mode = mode;
+      _secondsRemaining = _getDurationForMode(mode);
+      _progressController.value = 0.0;
+    });
+  }
+
+  void _showSettings() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Settings',
+      pageBuilder: (_, _, _) => Container(),
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionBuilder: (context, anim1, _, _) => Transform.scale(
+        scale: anim1.value,
+        child: Opacity(
+          opacity: anim1.value,
+          child: SettingsDialog(
+            workTime: _workTime,
+            shortBreakTime: _shortBreakTime,
+            longBreakTime: _longBreakTime,
+            mode: _mode,
+            onWorkTimeChanged: (v) => setState(() {
+              _workTime = v;
+              if (_mode == 'Work') _secondsRemaining = v;
+            }),
+            onShortBreakTimeChanged: (v) => setState(() {
+              _shortBreakTime = v;
+              if (_mode == 'Short') _secondsRemaining = v;
+            }),
+            onLongBreakTimeChanged: (v) => setState(() {
+              _longBreakTime = v;
+              if (_mode == 'Long') _secondsRemaining = v;
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    int totalDur = _getDurationForMode(_mode);
+    return Scaffold(
+      body: Stack(
+        children: [
+          const PomodoroBackground(),
+          Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(50),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                child: Container(
+                  width: 380,
+                  height: 560,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 40,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 30),
+                      ModeSelector(
+                        currentMode: _mode,
+                        onModeChanged: _switchMode,
+                      ),
+                      const SizedBox(height: 50),
+                      AnimatedBuilder(
+                        animation: _progressController,
+                        builder: (context, _) => TimerDisplay(
+                          progress:
+                              ((_secondsRemaining -
+                                          (1.0 -
+                                              (_isRunning
+                                                  ? (1.0 -
+                                                        _progressController
+                                                            .value)
+                                                  : 1.0))) /
+                                      totalDur)
+                                  .clamp(0.0, 1.0),
+                          secondsRemaining: _secondsRemaining,
+                          mode: _mode,
+                          isEyeBreak: _mode == 'Eye Break',
+                          formattedTime:
+                              '${(_secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}',
+                        ),
+                      ),
+                      const SizedBox(height: 60),
+                      TimerControls(
+                        isRunning: _isRunning,
+                        onReset: _resetTimer,
+                        onToggle: _isRunning ? _pauseTimer : _startTimer,
+                        onSettings: _showSettings,
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
