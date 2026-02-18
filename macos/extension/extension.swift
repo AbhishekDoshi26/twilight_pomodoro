@@ -111,8 +111,8 @@ struct PomodoroWidget: Widget {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             PomodoroWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Pomodoro Timer")
-        .description("Track your current session at a glance.")
+        .configurationDisplayName("Twilight Pomodoro")
+        .description("Track your session with the Twilight Pomodoro.")
         .supportedFamilies([.systemSmall])
     }
 }

@@ -23,7 +23,7 @@ class PomodoroApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tahoe Pomodoro',
+      title: 'Twilight Pomodoro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
