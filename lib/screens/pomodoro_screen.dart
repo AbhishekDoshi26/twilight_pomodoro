@@ -55,10 +55,9 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       }
 
       if (state['isRunning'] == true) {
-        _startTimer();
-      } else if (_secondsRemaining < _getDurationForMode(_mode)) {
-        TrayService.updateTrayText('PAUSED');
+        _isRunning = false;
       }
+      TrayService.updateTrayText('PAUSED');
     }
   }
 

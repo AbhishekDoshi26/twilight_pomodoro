@@ -11,9 +11,11 @@ class TrayService extends TrayListener {
   static Future<void> init() async {
     if (!Platform.isMacOS) return;
 
-    await trayManager.setIcon(
-      'assets/app_icon.png', // Ensure this is a transparent template icon for best results
-    );
+    try {
+      await trayManager.setIcon('assets/app_icon.png');
+    } catch (e) {
+      debugPrint('Error setting tray icon: $e');
+    }
 
     final Menu menu = Menu(
       items: [

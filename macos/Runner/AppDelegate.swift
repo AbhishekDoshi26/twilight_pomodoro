@@ -1,9 +1,10 @@
 import Cocoa
 import FlutterMacOS
 import WidgetKit
+import UserNotifications
 
 @main
-class AppDelegate: FlutterAppDelegate {
+class AppDelegate: FlutterAppDelegate, UNUserNotificationCenterDelegate {
     override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
@@ -13,6 +14,8 @@ class AppDelegate: FlutterAppDelegate {
     }
 
     override func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
+        
         let controller = mainFlutterWindow?.contentViewController as! FlutterViewController
         let widgetChannel = FlutterMethodChannel(name: "com.abhishek.pomodoro/widget",
                                                 binaryMessenger: controller.engine.binaryMessenger)
@@ -34,13 +37,21 @@ class AppDelegate: FlutterAppDelegate {
                         defaults.set(mode, forKey: "mode")
                         defaults.set(isRunning, forKey: "isRunning")
                         defaults.set(targetDate.timeIntervalSince1970, forKey: "targetTimestamp")
-                        defaults.synchronize()
+                        
+                        // Force distinct synchronization
+                        let success = defaults.synchronize()
+                        print("Widget Update: isRunning=\(isRunning), mode=\(mode), success=\(success)")
                         
                         if #available(macOS 11.0, *) {
-                            WidgetCenter.shared.reloadAllTimelines()
+                            DispatchQueue.main.async {
+                                WidgetCenter.shared.reloadAllTimelines()
+                                WidgetCenter.shared.reloadTimelines(ofKind: "TwilightPomodoroWidgetV2")
+                                print("WidgetCenter reload called for all timelines and specific kind")
+                            }
                         }
                         result(true)
                     } else {
+                        print("Error: App Group UserDefaults is nil")
                         result(FlutterError(code: "UNAVAILABLE",
                                           message: "App Group not found",
                                           details: nil))
@@ -73,5 +84,15 @@ class AppDelegate: FlutterAppDelegate {
         }
         
         super.applicationDidFinishLaunching(notification)
+    }
+
+    // This allows notifications to be shown even when the app is in the foreground
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        print("🔔 DEBUG: Notification received in foreground: \(notification.request.content.title)")
+        if #available(macOS 11.0, *) {
+            completionHandler([.banner, .list, .sound])
+        } else {
+            completionHandler([.alert, .sound])
+        }
     }
 }

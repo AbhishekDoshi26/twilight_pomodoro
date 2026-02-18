@@ -3,6 +3,7 @@ import 'package:window_manager/window_manager.dart';
 import 'services/notification_service.dart';
 import 'services/tray_service.dart';
 import 'services/widget_service.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'screens/pomodoro_screen.dart';
 
 void main() async {
@@ -11,6 +12,7 @@ void main() async {
   // Must add this for window_manager
   await windowManager.ensureInitialized();
 
+  tz.initializeTimeZones();
   await NotificationService.init();
   await TrayService.init();
   await WidgetService.init();

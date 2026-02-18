@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -9,13 +10,11 @@ class NotificationService {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // Note: defaultToSpeaking: true is deprecated or not available in all versions,
-    // but requestXPermission: false lets us request them explicitly later.
     const DarwinInitializationSettings macOSSettings =
         DarwinInitializationSettings(
-          requestAlertPermission: false,
-          requestBadgePermission: false,
-          requestSoundPermission: false,
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
         );
 
     const InitializationSettings initSettings = InitializationSettings(
@@ -39,35 +38,27 @@ class NotificationService {
   static Future<void> showNotification(String title, String body) async {
     debugPrint('Attempting to show notification: $title - $body');
 
-    // Android Configuration
-    const AndroidNotificationDetails
-    androidDetails = AndroidNotificationDetails(
-      'pomodoro_timer_channel_v4', // New channel for persistence
-      'Pomodoro Timer Alerts',
-      channelDescription: 'Important alerts for completion',
-      importance: Importance.max,
-      priority: Priority.high,
-      sound: RawResourceAndroidNotificationSound('smooth_notification'),
-      playSound: true,
-      ongoing:
-          false, // Turn off ongoing so it doesn't vanish with the app lifecycle
-      autoCancel: false, // Keep it on the screen until dismissed
-      enableVibration: true,
-      visibility:
-          NotificationVisibility.public, // Show full content on lock screen
-      category:
-          AndroidNotificationCategory.alarm, // Treats it as an important alarm
-    );
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'pomodoro_timer_channel_v4',
+          'Pomodoro Timer Alerts',
+          channelDescription: 'Important alerts for completion',
+          importance: Importance.max,
+          priority: Priority.high,
+          sound: RawResourceAndroidNotificationSound('smooth_notification'),
+          playSound: true,
+          ongoing: false,
+          autoCancel: false,
+          enableVibration: true,
+          visibility: NotificationVisibility.public,
+          category: AndroidNotificationCategory.alarm,
+        );
 
-    // macOS Configuration
-    // Note: For custom sounds on macOS, the file must be added to the Xcode project resources.
-    // If it's not found, it will fallback to the default sound.
     const DarwinNotificationDetails darwinDetails = DarwinNotificationDetails(
       presentSound: true,
-      sound: 'smooth_notification.mp3',
       presentAlert: true,
       presentBadge: true,
-      interruptionLevel: InterruptionLevel.critical,
+      interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
     const NotificationDetails details = NotificationDetails(
@@ -76,16 +67,76 @@ class NotificationService {
     );
 
     try {
+      final int id = DateTime.now().millisecondsSinceEpoch % 100000;
       await _notificationsPlugin.show(
-        id: DateTime.now().millisecond, // Unique ID to avoid overlapping
+        id: id,
         title: title,
         body: body,
         notificationDetails: details,
       );
-      debugPrint('Notification sent successfully');
+      debugPrint('Notification sent successfully with ID: $id');
     } catch (e) {
       debugPrint('Error showing notification: $e');
     }
+  }
+
+  static Future<void> scheduleNotification(
+    String title,
+    String body,
+    int seconds,
+  ) async {
+    if (seconds <= 0) return;
+
+    debugPrint('Scheduling notification in $seconds seconds: $title');
+
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'pomodoro_timer_scheduled_v1',
+          'Scheduled Timer Alerts',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+
+    const DarwinNotificationDetails darwinDetails = DarwinNotificationDetails(
+      presentSound: true,
+      presentAlert: true,
+      presentBadge: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      macOS: darwinDetails,
+    );
+
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: 0,
+        title: title,
+        body: body,
+        scheduledDate: tz.TZDateTime.now(
+          tz.local,
+        ).add(Duration(seconds: seconds)),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        notificationDetails: details,
+      );
+      debugPrint('Notification scheduled successfully');
+    } catch (e) {
+      debugPrint('Error scheduling notification: $e');
+    }
+  }
+
+  static Future<void> cancelAllNotifications() async {
+    await _notificationsPlugin.cancelAll();
+    debugPrint('All notifications cancelled');
+  }
+
+  static Future<void> sendTestNotification() async {
+    debugPrint('Sending test notification...');
+    await showNotification(
+      'Test Notification 🔔',
+      'If you see this, your notifications are working perfectly!',
+    );
   }
 
   static Future<bool> requestPermissions() async {
@@ -93,7 +144,6 @@ class NotificationService {
 
     bool granted = false;
 
-    // Request Android 13+ permissions
     final androidImplementation = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -105,7 +155,6 @@ class NotificationService {
       debugPrint('Android notification permission granted: $granted');
     }
 
-    // Request macOS permissions
     final macOSImplementation = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
           MacOSFlutterLocalNotificationsPlugin
