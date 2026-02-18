@@ -32,14 +32,17 @@ class TrayService extends TrayListener {
 
   @override
   void onTrayIconMouseDown() {
-    // Left click on macOS usually toggles the window
+    _toggleWindow();
+  }
+
+  @override
+  void onTrayIconMouseUp() {
+    // Some macOS versions respond better to MouseUp
     _toggleWindow();
   }
 
   @override
   void onTrayIconRightMouseDown() {
-    // trayManager handles showing the context menu automatically on macOS usually,
-    // but we can force it or handle specific right-click logic here if needed.
     trayManager.popUpContextMenu();
   }
 
@@ -53,17 +56,25 @@ class TrayService extends TrayListener {
   }
 
   Future<void> _showWindow() async {
+    await windowManager.setSkipTaskbar(false);
     await windowManager.show();
+    await windowManager.restore();
     await windowManager.focus();
   }
 
   Future<void> _toggleWindow() async {
+    bool isMinimized = await windowManager.isMinimized();
     bool isVisible = await windowManager.isVisible();
-    if (isVisible) {
-      // If visible but not focused, focus it. If focused, hide it (optional behavior)
-      await windowManager.focus();
-    } else {
+
+    if (isMinimized || !isVisible) {
       await _showWindow();
+    } else {
+      bool isFocused = await windowManager.isFocused();
+      if (isFocused) {
+        await windowManager.hide();
+      } else {
+        await windowManager.focus();
+      }
     }
   }
 }

@@ -54,6 +54,9 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       setState(() => _secondsRemaining = _getDurationForMode(_mode));
     }
     setState(() => _isRunning = true);
+    // Update Widget immediately on start
+    _syncWidget();
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
         setState(() => _secondsRemaining--);
@@ -68,24 +71,11 @@ class _PomodoroScreenState extends State<PomodoroScreen>
         final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
         final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
         TrayService.updateTrayText('$minutes:$seconds');
-
-        // Update macOS Desktop Widget
-        WidgetService.updateWidget(
-          secondsRemaining: _secondsRemaining,
-          totalSeconds: _getDurationForMode(_mode),
-          mode: _mode,
-          isRunning: _isRunning,
-        );
       } else {
         _timer?.cancel();
         setState(() => _isRunning = false);
         // Explicitly update widget when timer reaches zero
-        WidgetService.updateWidget(
-          secondsRemaining: 0,
-          totalSeconds: _getDurationForMode(_mode),
-          mode: _mode,
-          isRunning: false,
-        );
+        _syncWidget();
         _handleTimerCompletion();
       }
     });
@@ -234,12 +224,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     _progressController.stop();
     setState(() => _isRunning = false);
     TrayService.updateTrayText('');
-    WidgetService.updateWidget(
-      secondsRemaining: _secondsRemaining,
-      totalSeconds: _getDurationForMode(_mode),
-      mode: _mode,
-      isRunning: false,
-    );
+    _syncWidget();
   }
 
   void _resetTimer() {
@@ -249,12 +234,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       _progressController.value = 0.0;
     });
     TrayService.updateTrayText('');
-    WidgetService.updateWidget(
-      secondsRemaining: _secondsRemaining,
-      totalSeconds: _getDurationForMode(_mode),
-      mode: _mode,
-      isRunning: false,
-    );
+    _syncWidget();
   }
 
   int _getDurationForMode(String mode) {
@@ -277,6 +257,16 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       _secondsRemaining = _getDurationForMode(mode);
       _progressController.value = 0.0;
     });
+    _syncWidget();
+  }
+
+  void _syncWidget() {
+    WidgetService.updateWidget(
+      secondsRemaining: _secondsRemaining,
+      totalSeconds: _getDurationForMode(_mode),
+      mode: _mode,
+      isRunning: _isRunning,
+    );
   }
 
   void _showSettings() {
@@ -297,15 +287,24 @@ class _PomodoroScreenState extends State<PomodoroScreen>
             mode: _mode,
             onWorkTimeChanged: (v) => setState(() {
               _workTime = v;
-              if (_mode == 'Work') _secondsRemaining = v;
+              if (_mode == 'Work') {
+                _secondsRemaining = v;
+                _syncWidget();
+              }
             }),
             onShortBreakTimeChanged: (v) => setState(() {
               _shortBreakTime = v;
-              if (_mode == 'Short') _secondsRemaining = v;
+              if (_mode == 'Short') {
+                _secondsRemaining = v;
+                _syncWidget();
+              }
             }),
             onLongBreakTimeChanged: (v) => setState(() {
               _longBreakTime = v;
-              if (_mode == 'Long') _secondsRemaining = v;
+              if (_mode == 'Long') {
+                _secondsRemaining = v;
+                _syncWidget();
+              }
             }),
           ),
         ),
