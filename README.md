@@ -8,6 +8,16 @@ A premium, high-fidelity Pomodoro timer built with **Flutter**, designed specifi
 
 [**Download for macOS (.zip)**](Twilight_Pomodoro_macOS_v0.0.1_b3.zip)
 
+### 🚀 First Time Setup
+If macOS says the app "cannot be verified":
+1. Open your terminal.
+2. Type `xattr -cr ` (add a space at the end) but **don't press enter** yet.
+3. **Drag and drop** the `Twilight Pomodoro.app` from your folder into the terminal window.
+4. Press **Enter**.
+5. You can now open the app normally!
+
+*This is a one-time step required for unnotarized community builds.*
+
 ---
 
 ## ✨ Features
