@@ -38,20 +38,24 @@ class NotificationService {
     debugPrint('Attempting to show notification: $title - $body');
 
     // Android Configuration
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'pomodoro_timer_channel_v3', // Changed ID to force new channel
-          'Pomodoro Timer',
-          channelDescription:
-              'Notifications for Pomodoro Work and Break sessions',
-          importance: Importance.max,
-          priority: Priority.high,
-          sound: RawResourceAndroidNotificationSound('smooth_notification'),
-          playSound: true,
-          ongoing: true,
-          autoCancel: false,
-          enableVibration: true,
-        );
+    const AndroidNotificationDetails
+    androidDetails = AndroidNotificationDetails(
+      'pomodoro_timer_channel_v4', // New channel for persistence
+      'Pomodoro Timer Alerts',
+      channelDescription: 'Important alerts for completion',
+      importance: Importance.max,
+      priority: Priority.high,
+      sound: RawResourceAndroidNotificationSound('smooth_notification'),
+      playSound: true,
+      ongoing:
+          false, // Turn off ongoing so it doesn't vanish with the app lifecycle
+      autoCancel: false, // Keep it on the screen until dismissed
+      enableVibration: true,
+      visibility:
+          NotificationVisibility.public, // Show full content on lock screen
+      category:
+          AndroidNotificationCategory.alarm, // Treats it as an important alarm
+    );
 
     // macOS Configuration
     // Note: For custom sounds on macOS, the file must be added to the Xcode project resources.

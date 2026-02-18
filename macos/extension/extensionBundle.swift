@@ -9,9 +9,9 @@ import WidgetKit
 import SwiftUI
 
 @main
-struct extensionBundle: WidgetBundle {
+struct PomodoroWidgetBundle: WidgetBundle {
     var body: some Widget {
-        extension()
-        extensionControl()
+        PomodoroWidget()
+        PomodoroWidgetControl()
     }
 }

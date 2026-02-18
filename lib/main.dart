@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 import 'services/notification_service.dart';
+import 'services/tray_service.dart';
+import 'services/widget_service.dart';
 import 'screens/pomodoro_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Must add this for window_manager
+  await windowManager.ensureInitialized();
+
   await NotificationService.init();
+  await TrayService.init();
+  await WidgetService.init();
   runApp(const PomodoroApp());
 }
 

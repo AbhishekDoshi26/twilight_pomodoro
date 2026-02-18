@@ -9,8 +9,8 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-struct extensionControl: ControlWidget {
-    static let kind: String = "com.example.pomodoro.extension"
+struct PomodoroWidgetControl: ControlWidget {
+    static let kind: String = "com.abhishek.pomodoro.Widget"
 
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(
@@ -30,7 +30,7 @@ struct extensionControl: ControlWidget {
     }
 }
 
-extension extensionControl {
+extension PomodoroWidgetControl {
     struct Value {
         var isRunning: Bool
         var name: String
@@ -38,12 +38,12 @@ extension extensionControl {
 
     struct Provider: AppIntentControlValueProvider {
         func previewValue(configuration: TimerConfiguration) -> Value {
-            extensionControl.Value(isRunning: false, name: configuration.timerName)
+            PomodoroWidgetControl.Value(isRunning: false, name: configuration.timerName)
         }
 
         func currentValue(configuration: TimerConfiguration) async throws -> Value {
             let isRunning = true // Check if the timer is running
-            return extensionControl.Value(isRunning: isRunning, name: configuration.timerName)
+            return PomodoroWidgetControl.Value(isRunning: isRunning, name: configuration.timerName)
         }
     }
 }

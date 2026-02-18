@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
+import '../services/tray_service.dart';
+import '../services/widget_service.dart';
 import '../widgets/pomodoro_background.dart';
 import '../widgets/timer_controls.dart';
 import '../widgets/mode_selector.dart';
@@ -61,6 +63,18 @@ class _PomodoroScreenState extends State<PomodoroScreen>
           duration: const Duration(seconds: 1),
           curve: Curves.linear,
         );
+
+        // Update macOS Menu Bar
+        final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
+        final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
+        TrayService.updateTrayText('$minutes:$seconds');
+
+        // Update macOS Desktop Widget
+        WidgetService.updateWidget(
+          secondsRemaining: _secondsRemaining,
+          mode: _mode,
+          isRunning: _isRunning,
+        );
       } else {
         _timer?.cancel();
         setState(() => _isRunning = false);
@@ -91,9 +105,98 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       title = 'Eye Break Over';
       body = 'Success! You can resume your work now.';
       NotificationService.showNotification(title, body);
-      return _switchMode('Eye Care');
+      return _showResumeWorkPrompt();
     }
     NotificationService.showNotification(title, body);
+  }
+
+  void _showResumeWorkPrompt() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Resume Work',
+      pageBuilder: (_, _, _) => Container(),
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionBuilder: (context, anim1, _, _) => Transform.scale(
+        scale: anim1.value,
+        child: Opacity(
+          opacity: anim1.value,
+          child: AlertDialog(
+            backgroundColor: Colors.white.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            content: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.greenAccent,
+                        size: 64,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Refresh Complete!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Your eyes are rested. Ready to continue focusing?',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _switchMode('Eye Care');
+                          _startTimer();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigoAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 48,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Resume Work',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showEyeBreakPrompt() {
@@ -122,6 +225,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     _timer?.cancel();
     _progressController.stop();
     setState(() => _isRunning = false);
+    TrayService.updateTrayText('');
+    WidgetService.updateWidget(
+      secondsRemaining: _secondsRemaining,
+      mode: _mode,
+      isRunning: false,
+    );
   }
 
   void _resetTimer() {
@@ -130,6 +239,12 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       _secondsRemaining = _getDurationForMode(_mode);
       _progressController.value = 0.0;
     });
+    TrayService.updateTrayText('');
+    WidgetService.updateWidget(
+      secondsRemaining: _secondsRemaining,
+      mode: _mode,
+      isRunning: false,
+    );
   }
 
   int _getDurationForMode(String mode) {
