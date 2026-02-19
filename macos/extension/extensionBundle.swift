@@ -12,6 +12,5 @@ import SwiftUI
 struct PomodoroWidgetBundle: WidgetBundle {
     var body: some Widget {
         PomodoroWidget()
-        PomodoroWidgetControl()
     }
 }

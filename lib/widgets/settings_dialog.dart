@@ -9,11 +9,15 @@ class SettingsDialog extends StatefulWidget {
   final int workTime;
   final int shortBreakTime;
   final int longBreakTime;
+  final int customWorkTime;
+  final int customBreakTime;
   final String mode;
   final bool notificationsEnabled;
   final Function(int) onWorkTimeChanged;
   final Function(int) onShortBreakTimeChanged;
   final Function(int) onLongBreakTimeChanged;
+  final Function(int) onCustomWorkTimeChanged;
+  final Function(int) onCustomBreakTimeChanged;
   final Function(bool) onNotificationsChanged;
 
   const SettingsDialog({
@@ -21,11 +25,15 @@ class SettingsDialog extends StatefulWidget {
     required this.workTime,
     required this.shortBreakTime,
     required this.longBreakTime,
+    required this.customWorkTime,
+    required this.customBreakTime,
     required this.mode,
     required this.notificationsEnabled,
     required this.onWorkTimeChanged,
     required this.onShortBreakTimeChanged,
     required this.onLongBreakTimeChanged,
+    required this.onCustomWorkTimeChanged,
+    required this.onCustomBreakTimeChanged,
     required this.onNotificationsChanged,
   });
 
@@ -37,6 +45,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late int _localWorkTime;
   late int _localShortBreakTime;
   late int _localLongBreakTime;
+  late int _localCustomWorkTime;
+  late int _localCustomBreakTime;
   late bool _localNotificationsEnabled;
 
   @override
@@ -45,6 +55,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _localWorkTime = widget.workTime;
     _localShortBreakTime = widget.shortBreakTime;
     _localLongBreakTime = widget.longBreakTime;
+    _localCustomWorkTime = widget.customWorkTime;
+    _localCustomBreakTime = widget.customBreakTime;
     _localNotificationsEnabled = widget.notificationsEnabled;
     _verifyPermissions();
   }
@@ -128,6 +140,30 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         _localLongBreakTime = val.toInt() * 60;
                       });
                       widget.onLongBreakTimeChanged(_localLongBreakTime);
+                    },
+                  ),
+                  SettingsSlider(
+                    label: 'Custom work',
+                    value: (_localCustomWorkTime ~/ 60).toDouble(),
+                    min: 1,
+                    max: 120,
+                    onChanged: (val) {
+                      setState(() {
+                        _localCustomWorkTime = val.toInt() * 60;
+                      });
+                      widget.onCustomWorkTimeChanged(_localCustomWorkTime);
+                    },
+                  ),
+                  SettingsSlider(
+                    label: 'Custom break',
+                    value: (_localCustomBreakTime ~/ 60).toDouble(),
+                    min: 1,
+                    max: 60,
+                    onChanged: (val) {
+                      setState(() {
+                        _localCustomBreakTime = val.toInt() * 60;
+                      });
+                      widget.onCustomBreakTimeChanged(_localCustomBreakTime);
                     },
                   ),
                   const SizedBox(height: 20),

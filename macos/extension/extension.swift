@@ -3,43 +3,38 @@ import SwiftUI
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), secondsRemaining: 1500, totalSeconds: 1500, mode: "Work", isRunning: false, targetDate: Date().addingTimeInterval(1500))
+        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), secondsRemaining: 1500, mode: "Work", isRunning: false, targetDate: Date().addingTimeInterval(1500))
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        let entry = fetchLatestEntry(date: Date(), configuration: configuration)
-        return entry
+        fetchLatestEntry(date: Date(), configuration: configuration)
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
         let entry = fetchLatestEntry(date: Date(), configuration: configuration)
-        return Timeline(entries: [entry], policy: .never)
+        // Refresh every 10 minutes as a fallback; app-side pushes are primary
+        let nextUpdate = Date().addingTimeInterval(600)
+        return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
 
     private func fetchLatestEntry(date: Date, configuration: ConfigurationAppIntent) -> SimpleEntry {
         let defaults = UserDefaults(suiteName: "group.com.abhishek.pomodoro")
         let seconds = defaults?.integer(forKey: "secondsRemaining") ?? 1500
-        let total = defaults?.integer(forKey: "totalSeconds") ?? 1500
         let mode = defaults?.string(forKey: "mode") ?? "Work"
         let isRunning = defaults?.bool(forKey: "isRunning") ?? false
         let targetTimestamp = defaults?.double(forKey: "targetTimestamp") ?? 0
         
-        let targetDate: Date
-        if targetTimestamp > 0 {
+        var targetDate = Date().addingTimeInterval(Double(seconds))
+        if isRunning && targetTimestamp > 0 {
              targetDate = Date(timeIntervalSince1970: targetTimestamp)
-        } else {
-             targetDate = Date().addingTimeInterval(Double(seconds))
         }
-        
-        let finalRunning = isRunning && targetDate > Date()
         
         return SimpleEntry(
             date: date,
             configuration: configuration,
             secondsRemaining: seconds,
-            totalSeconds: total > 0 ? total : 1500, // Prevent divide by zero
             mode: mode,
-            isRunning: finalRunning,
+            isRunning: isRunning && targetDate > Date(),
             targetDate: targetDate
         )
     }
@@ -49,7 +44,6 @@ struct SimpleEntry: TimelineEntry {
     let date: Date
     let configuration: ConfigurationAppIntent
     let secondsRemaining: Int
-    let totalSeconds: Int
     let mode: String
     let isRunning: Bool
     let targetDate: Date
@@ -59,36 +53,57 @@ struct PomodoroWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
+            // Status Indicator (Rectangular)
+            HStack {
+                Rectangle()
+                    .fill(accentColor)
+                    .frame(width: 4, height: 12)
+                Text(entry.mode.uppercased())
+                    .font(.system(size: 10, weight: .black, design: .monospaced))
+                    .foregroundColor(accentColor)
+                Spacer()
+                if entry.isRunning {
+                    Text("ACTIVE")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+            
+            Spacer()
+            
             // Time Display
             if entry.isRunning {
                 Text(entry.targetDate, style: .timer)
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                    .font(.system(size: 36, weight: .medium, design: .rounded))
+                    .foregroundColor(.white)
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
             } else {
-                Text("\(formatTime(entry.secondsRemaining)) V2")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .frame(maxWidth: .infinity)
+                Text(formatTime(entry.secondsRemaining))
+                    .font(.system(size: 36, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.8))
             }
             
-            // Mode Badge
-            Text(entry.mode.uppercased())
-                .font(.system(size: 10, weight: .black))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(accentColor.opacity(0.2))
-                .foregroundColor(accentColor)
-                .cornerRadius(4)
+            Spacer()
+            
+            // Version Label (to confirm rewrite)
+            Text("V5 FOCUS")
+                .font(.system(size: 7, weight: .bold))
+                .foregroundColor(.white.opacity(0.2))
         }
-        .containerBackground(.black, for: .widget)
+        .padding(16)
+        .containerBackground(Color(white: 0.05), for: .widget)
     }
 
     private var accentColor: Color {
-        if entry.mode == "Work" || entry.mode == "Eye Care" {
+        let mode = entry.mode.lowercased()
+        if mode.contains("work") {
             return Color.orange
+        } else if mode.contains("eye") || mode.contains("break") {
+            return Color.cyan
         } else {
-            return Color.green
+            return Color.orange
         }
     }
 
@@ -101,14 +116,14 @@ struct PomodoroWidgetEntryView : View {
 }
 
 struct PomodoroWidget: Widget {
-    let kind: String = "TwilightPomodoroWidgetV2"
+    let kind: String = "TwilightPomodoroWidgetV5"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             PomodoroWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Twilight Simple")
-        .description("Track your session without circles.")
+        .configurationDisplayName("Focus Terminal")
+        .description("Clean, strictly rectangular timer.")
         .supportedFamilies([.systemSmall])
         .contentMarginsDisabled()
     }

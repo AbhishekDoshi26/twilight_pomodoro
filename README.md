@@ -11,7 +11,7 @@ A premium, high-fidelity Pomodoro timer built with **Flutter**, designed specifi
 
 ## 📥 Download
 
-[**Download for macOS (.zip)**](Twilight_Pomodoro_macOS_v0.0.3_b7.zip)
+[**Download for macOS (.zip)**](Twilight_Pomodoro_macOS_v0.0.3_b8.zip)
 
 ### 🚀 First Time Setup
 If macOS says the app "cannot be verified":
@@ -35,11 +35,12 @@ If macOS says the app "cannot be verified":
 ### 🧘 Health-First Productivity
 - **20-20-20 Eye Care Rule**: Automatic interruptions every 20 minutes to prevent digital eye strain.
 - **Smart Sessions**: Seamlessly toggle between Focused Work, Short Breaks, and Long Rest periods.
+- **Custom Mode**: Fully configurable work and break durations tailored to your specific workflow (e.g., 50m work / 10m break).
 - **Resume Prompts**: Mindful transitions that ensure you're ready to start before the timer begins ticking.
 
 ### 💻 Native macOS Integration
 - **Menu Bar Extra (Tray)**: View your remaining time directly in the macOS menu bar. 
-- **Desktop Widgets**: A beautiful Native Swift (WidgetKit) widget that stays in sync with your live session.
+- **Focus Terminal (V5)**: A clean, strictly rectangular Swift (WidgetKit) widget with drift protection and instant app synchronization.
 - **High-Fidelity Audio**: Custom-designed "Smooth Notification" alert sounds for a pleasant focus environment.
 - **Lock Screen Persistence**: Critical alerts that stay visible when your Mac is locked.
 

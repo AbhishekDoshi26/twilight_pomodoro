@@ -45,6 +45,11 @@ class ModeSelector extends StatelessWidget {
                   currentMode == 'Eye Care' || currentMode == 'Eye Break',
               onTap: () => onModeChanged('Eye Care'),
             ),
+            ModeButton(
+              title: 'Custom',
+              isSelected: currentMode == 'Custom',
+              onTap: () => onModeChanged('Custom'),
+            ),
           ],
         ),
       ),
